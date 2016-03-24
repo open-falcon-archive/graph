@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coraldane/graph/api"
+	"github.com/coraldane/graph/g"
+	"github.com/coraldane/graph/store"
 	cmodel "github.com/open-falcon/common/model"
 	cutils "github.com/open-falcon/common/utils"
-	"github.com/open-falcon/graph/api"
-	"github.com/open-falcon/graph/g"
-	"github.com/open-falcon/graph/store"
 )
 
 func configDebugRoutes() {

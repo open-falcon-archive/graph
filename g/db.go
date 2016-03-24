@@ -28,7 +28,7 @@ func GetDbConn(connName string) (c *sql.DB, e error) {
 	dbLock.Lock()
 	defer dbLock.Unlock()
 
-	return DB, err
+	return DB, nil
 }
 
 // 创建一个新的mysql连接

@@ -5,13 +5,13 @@ import (
 	"math"
 	"time"
 
+	"github.com/coraldane/graph/g"
+	"github.com/coraldane/graph/index"
+	"github.com/coraldane/graph/proc"
+	"github.com/coraldane/graph/rrdtool"
+	"github.com/coraldane/graph/store"
 	cmodel "github.com/open-falcon/common/model"
 	cutils "github.com/open-falcon/common/utils"
-	"github.com/open-falcon/graph/g"
-	"github.com/open-falcon/graph/index"
-	"github.com/open-falcon/graph/proc"
-	"github.com/open-falcon/graph/rrdtool"
-	"github.com/open-falcon/graph/store"
 )
 
 type Graph int

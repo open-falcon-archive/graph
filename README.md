@@ -19,7 +19,7 @@ graph所做的事情，就是把用户每次push上来的数据，进行采样�
 
 mkdir -p $GOPATH/src/github.com/open-falcon
 cd $GOPATH/src/github.com/open-falcon
-git clone https://github.com/open-falcon/graph.git
+git clone https://github.com/coraldane/graph.git
 
 cd graph
 go get ./...
@@ -28,7 +28,7 @@ go get ./...
 ./control start
 ```
 
-你可以从[这里](https://github.com/open-falcon/graph/releases)，下载最新的release安装包，避免源码编译的种种问题。
+你可以从[这里](https://github.com/coraldane/graph/releases)，下载最新的release安装包，避免源码编译的种种问题。
 
 ## Configuration
 
