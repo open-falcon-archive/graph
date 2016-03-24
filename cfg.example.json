@@ -13,6 +13,7 @@
 	},
 	"db": {
 		"dsn": "root:@tcp(127.0.0.1:3306)/graph?loc=Local&parseTime=true",
+		"maxOpen": 10,
 		"maxIdle": 4
 	},
 	"callTimeout": 5000,

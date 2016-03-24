@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	DefaultMaxCacheSize                     = 5000000 // 默认 最多500w个,太大了内存会耗尽
+	DefaultMaxCacheSize                     = 100000 // 默认 最多10w个,太大了内存会耗尽
 	DefaultCacheProcUpdateTaskSleepInterval = time.Duration(1) * time.Second
 )
 
