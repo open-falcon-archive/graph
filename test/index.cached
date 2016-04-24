@@ -1,0 +1,30 @@
+#!/bin/bash
+## test home
+testdir=$(cd $(dirname $0)/; pwd)
+## word home
+workdir=$(dirname $testdir)
+cd $workdir
+
+cfg=./cfg.json
+httpport=80
+if [ -f $cfg ]; then
+    httpport=`cat $cfg | grep -A3 "\"http\":" | grep "\"listen\"" | cut -d\" -f4 | cut -d: -f2`
+fi
+httpprex="127.0.0.1:$httpport"
+
+if [ $# != 2 ];then
+    printf "format:./query \"endpoint\" \"counter\"\n"
+    exit 1
+fi
+
+# args
+endpoint=$1
+counter=$2
+
+# form request body
+req="[{\"endpoint\":\"$endpoint\", \"counter\":\"$counter\"}]"
+
+# request 
+url="$httpprex/v2/index/cached"
+
+curl -s -X GET -d "$req" "$url" | python -m json.tool
