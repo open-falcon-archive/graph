@@ -57,6 +57,26 @@ func UpdateIndexOne(endpoint string, metric string, tags map[string]string, dsty
 	return updateIndexFromOneItem(gitem, dbConn)
 }
 
+// 使用本地缓存，更新mysql索引; 只要提供endpoint+counter即可
+func UpdateIndexOneV2(endpoint, counter string) error {
+	md5 := cutils.ChecksumOfPK2(endpoint, counter)
+	cached := indexedItemCache.Get(md5)
+	if cached == nil {
+		return fmt.Errorf("not found")
+	}
+
+	icitem := cached.(*IndexCacheItem)
+	gitem := icitem.Item
+
+	dbConn, err := g.GetDbConn("UpdateIndexIncrTask")
+	if err != nil {
+		log.Println("[ERROR] make dbConn fail", err)
+		return err
+	}
+
+	return updateIndexFromOneItem(gitem, dbConn)
+}
+
 // 索引全量更新的当前并行数
 func GetConcurrentOfUpdateIndexAll() int {
 	return ConcurrentOfUpdateIndexAll - semaIndexUpdateAllTask.AvailablePermits()
