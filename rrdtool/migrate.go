@@ -11,7 +11,7 @@ import (
 	"time"
 
 	pfc "github.com/niean/goperfcounter"
-	"stathat.com/c/consistent"
+	"github.com/toolkits/consistent"
 
 	"github.com/coraldane/graph/g"
 	"github.com/coraldane/graph/store"
