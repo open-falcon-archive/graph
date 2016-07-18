@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/open-falcon/graph/api"
-	"github.com/open-falcon/graph/g"
-	"github.com/open-falcon/graph/http"
-	"github.com/open-falcon/graph/index"
-	"github.com/open-falcon/graph/rrdtool"
+	"github.com/coraldane/graph/api"
+	"github.com/coraldane/graph/g"
+	"github.com/coraldane/graph/http"
+	"github.com/coraldane/graph/index"
+	"github.com/coraldane/graph/rrdtool"
 )
 
 func start_signal(pid int, cfg *g.GlobalConfig) {
@@ -26,6 +26,10 @@ func start_signal(pid int, cfg *g.GlobalConfig) {
 
 		switch s {
 		case syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+			if nil != g.DB {
+				g.DB.Close()
+			}
+
 			log.Println("gracefull shut down")
 			if cfg.Http.Enabled {
 				http.Close_chan <- 1

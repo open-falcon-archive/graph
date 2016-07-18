@@ -11,14 +11,14 @@ import (
 
 	tcache "github.com/toolkits/cache/localcache/timedcache"
 
+	"github.com/coraldane/graph/g"
+	"github.com/coraldane/graph/proc"
 	cmodel "github.com/open-falcon/common/model"
 	cutils "github.com/open-falcon/common/utils"
-	"github.com/open-falcon/graph/g"
-	"github.com/open-falcon/graph/proc"
 )
 
 const (
-	DefaultMaxCacheSize                     = 5000000 // 默认 最多500w个,太大了内存会耗尽
+	DefaultMaxCacheSize                     = 100000 // 默认 最多10w个,太大了内存会耗尽
 	DefaultCacheProcUpdateTaskSleepInterval = time.Duration(1) * time.Second
 )
 

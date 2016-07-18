@@ -9,10 +9,10 @@ import (
 	nsema "github.com/toolkits/concurrent/semaphore"
 	ntime "github.com/toolkits/time"
 
+	"github.com/coraldane/graph/g"
+	proc "github.com/coraldane/graph/proc"
 	cmodel "github.com/open-falcon/common/model"
 	cutils "github.com/open-falcon/common/utils"
-	"github.com/open-falcon/graph/g"
-	proc "github.com/open-falcon/graph/proc"
 )
 
 const (

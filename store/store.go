@@ -9,7 +9,7 @@ import (
 
 	cmodel "github.com/open-falcon/common/model"
 
-	"github.com/open-falcon/graph/g"
+	"github.com/coraldane/graph/g"
 )
 
 var GraphItems *GraphItemMap

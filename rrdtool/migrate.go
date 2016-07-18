@@ -13,9 +13,9 @@ import (
 	pfc "github.com/niean/goperfcounter"
 	"github.com/toolkits/consistent"
 
+	"github.com/coraldane/graph/g"
+	"github.com/coraldane/graph/store"
 	cmodel "github.com/open-falcon/common/model"
-	"github.com/open-falcon/graph/g"
-	"github.com/open-falcon/graph/store"
 )
 
 const (

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/coraldane/graph/proc"
+	"github.com/coraldane/graph/store"
 	cutils "github.com/open-falcon/common/utils"
-	"github.com/open-falcon/graph/proc"
-	"github.com/open-falcon/graph/store"
 )
 
 func configProcRoutes() {
