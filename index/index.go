@@ -5,6 +5,8 @@ import (
 	"log"
 
 	cmodel "github.com/open-falcon/common/model"
+	cutils "github.com/open-falcon/common/utils"
+
 	"github.com/open-falcon/graph/g"
 )
 
@@ -71,6 +73,19 @@ func GetIndexedItemCache(endpoint string, metric string, tags map[string]string,
 		return
 	}
 
+	r = icitem.Item
+	return
+}
+
+func GetIndexedItemCacheV2(endpoint, counter string) (r *cmodel.GraphItem, rerr error) {
+	md5 := cutils.ChecksumOfPK2(endpoint, counter)
+	cached := indexedItemCache.Get(md5)
+	if cached == nil {
+		rerr = fmt.Errorf("not found")
+		return
+	}
+
+	icitem := cached.(*IndexCacheItem)
 	r = icitem.Item
 	return
 }

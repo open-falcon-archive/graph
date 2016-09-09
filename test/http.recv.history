@@ -1,13 +1,10 @@
 #!/bin/bash
-e=$1
-m=$2
-tags=$3
-
 host_file=./graph.list
+counter=$1
 for i in `cat $host_file`;
 do
     printf "%s\n" $i
-    curl -s "$i/history/$e/$m/$tags"
+    curl -s "http://$i/history/$counter"
     printf "\n"
     sleep 0.1
 done

@@ -1,10 +1,13 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+
+	cmodel "github.com/open-falcon/common/model"
 
 	"github.com/open-falcon/graph/index"
 )
@@ -121,4 +124,92 @@ func configIndexRoutes() {
 		RenderDataJson(w, item)
 	})
 
+	http.HandleFunc("/v2/index/delete", httpHandler_deleteIndex)
+	http.HandleFunc("/v2/index/update", httpHandler_updateIndex)
+	http.HandleFunc("/v2/index/cached", httpHandler_cachedIndex)
+}
+
+// 删除 指定counter对应的mysql索引 及其 本地缓存
+func httpHandler_deleteIndex(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		RenderMsgJson(w, "bad http method, use post")
+		return
+	}
+
+	var body []*cmodel.GraphCounter
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&body)
+	if err != nil {
+		RenderMsgJson(w, err.Error())
+		return
+	}
+	if len(body) < 1 {
+		RenderMsgJson(w, "empty")
+		return
+	}
+
+	counter := body[0]
+	err = index.DeleteCounter(counter.Endpoint, counter.Counter)
+	if err != nil {
+		RenderMsgJson(w, err.Error())
+		return
+	}
+
+	RenderDataJson(w, "")
+}
+
+func httpHandler_updateIndex(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		RenderMsgJson(w, "bad http method, use post")
+		return
+	}
+
+	var body []*cmodel.GraphCounter
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&body)
+	if err != nil {
+		RenderMsgJson(w, err.Error())
+		return
+	}
+	if len(body) < 1 {
+		RenderMsgJson(w, "empty")
+		return
+	}
+
+	counter := body[0]
+	err = index.UpdateIndexOneV2(counter.Endpoint, counter.Counter)
+	if err != nil {
+		RenderMsgJson(w, err.Error())
+		return
+	}
+
+	RenderDataJson(w, "")
+}
+
+func httpHandler_cachedIndex(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		RenderMsgJson(w, "bad http method, use get")
+		return
+	}
+
+	var body []*cmodel.GraphCounter
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&body)
+	if err != nil {
+		RenderMsgJson(w, err.Error())
+		return
+	}
+	if len(body) < 1 {
+		RenderMsgJson(w, "empty")
+		return
+	}
+
+	counter := body[0]
+	item, err := index.GetIndexedItemCacheV2(counter.Endpoint, counter.Counter)
+	if err != nil {
+		RenderDataJson(w, fmt.Sprintf("%v", err))
+		return
+	}
+
+	RenderDataJson(w, item)
 }
