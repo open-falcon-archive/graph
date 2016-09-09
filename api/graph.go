@@ -179,6 +179,17 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 				} else {
 					// missing
 					val = cmodel.JsonFloat(math.NaN())
+
+					nextts := ts + int64(step)
+					for tempindx := itemIdx + 1; tempindx < items_size-1; tempindx++ {
+						tempTimestamp := items[tempindx].Timestamp
+						if tempTimestamp == nextts {
+							itemIdx = tempindx
+							break
+						} else if tempTimestamp > nextts {
+							break
+						}
+					}
 				}
 
 				if ts >= start_ts && ts <= end_ts {
@@ -194,6 +205,16 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 				} else {
 					// missing
 					val = cmodel.JsonFloat(math.NaN())
+
+					for tempindx := itemIdx + 1; tempindx < items_size-1; tempindx++ {
+						tempTimestamp := items[tempindx].Timestamp
+						if tempTimestamp == ts {
+							itemIdx = tempindx
+							break
+						} else if tempTimestamp > ts {
+							break
+						}
+					}
 				}
 
 				if ts >= start_ts && ts <= end_ts {
