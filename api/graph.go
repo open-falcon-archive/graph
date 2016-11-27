@@ -3,7 +3,7 @@ package api
 import (
 	"fmt"
 	"math"
-	"time"
+	//"log"
 
 	cmodel "github.com/open-falcon/common/model"
 	cutils "github.com/open-falcon/common/utils"
@@ -86,6 +86,75 @@ func handleItems(items []*cmodel.GraphItem) {
 	}
 }
 
+func consolFun(CF string, array []float64) float64 {
+	if CF == "AVERAGE" {
+		var sum float64 = 0
+		var count int = 0
+		for _, value := range(array) {
+			sum += value
+			count++
+		}
+		if count == 0 {
+			return math.NaN()
+		} else {
+			return sum / float64(count)
+		}
+	} else if CF == "MAX" {
+		var max float64 = math.NaN()
+		for _, value := range(array) {
+			if math.IsNaN(max) || value > max {
+				max = value
+			}
+		}
+		return max
+	} else if CF == "MIN" {
+		var min float64 = math.NaN()
+		for _, value := range(array) {
+			if math.IsNaN(min) || value < min {
+				min = value
+			}
+		}
+		return min
+	}
+	return math.NaN()
+}
+
+func calc(start_ts int64, end_ts int64, dsType string, step int, items []*cmodel.GraphItem, CF string, dst_step int) []*cmodel.RRDData {
+	var array []float64 = []float64{}
+	var idx int = 0
+	var val float64
+	var ret []*cmodel.RRDData = make([]*cmodel.RRDData, 0)
+
+	//log.Printf("calc: start_ts=%d, end_ts=%d, dsType=%s, step=%d, len(items)=%d, CF=%s, dst_step=%d\n", start_ts, end_ts, dsType, step, len(items), CF, dst_step)
+
+	for ts := start_ts; ts <= end_ts; ts += int64(step) {
+		for ; idx < len(items); idx++ {
+			if items[idx].Timestamp == ts {
+				if dsType == g.GAUGE {
+					array = append(array, items[idx].Value)
+				} else if (dsType == g.COUNTER || dsType == g.DERIVE) && idx < len(items) - 1 {
+					array = append(array, float64(items[idx+1].Value - items[idx].Value) / float64(items[idx+1].Timestamp - items[idx].Timestamp))
+				}
+			} else if items[idx].Timestamp > ts {
+				break
+			}
+		}
+
+		if ts % int64(dst_step) == 0 {
+			if dsType == g.GAUGE {
+				val = consolFun(CF, array)
+			} else if dsType == g.COUNTER || dsType == g.DERIVE {
+				val = consolFun(CF, array)
+			}
+			//fmt.Println("ConsolFun: ", val)
+			ret = append(ret, &cmodel.RRDData{Timestamp: ts, Value: cmodel.JsonFloat(val)})
+			array = []float64{}
+		}
+
+	}
+	return ret
+}
+
 func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryResponse) error {
 	var (
 		datas      []*cmodel.RRDData
@@ -108,7 +177,7 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 	resp.DsType = dsType
 	resp.Step = step
 
-	start_ts := param.Start - param.Start%int64(step)
+	start_ts := param.Start - param.Start%int64(step) - int64(step)
 	end_ts := param.End - param.End%int64(step) + int64(step)
 	if end_ts-start_ts-int64(step) < 1 {
 		return nil
@@ -117,6 +186,8 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 	md5 := cutils.Md5(param.Endpoint + "/" + param.Counter)
 	key := g.FormRrdCacheKey(md5, dsType, step)
 	filename := g.RrdFileName(cfg.RRD.Storage, md5, dsType, step)
+
+	//log.Printf("[DEBUG] Query endpoint = %s, counter = %s, dsType = %s, step = %d, md5 = %s, key = %s, file_name = %s\n", param.Endpoint, param.Counter, dsType, step, md5, key, filename);
 
 	// read cached items
 	items, flag := store.GraphItems.FetchAll(key)
@@ -135,21 +206,12 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 		<-done
 		// fetch data from remote
 		datas = res.Values
+		resp.Step = res.Step
 		datas_size = len(datas)
 	} else {
 		// read data from rrd file
-		datas, _ = rrdtool.Fetch(filename, param.ConsolFun, start_ts, end_ts, step)
+		datas, resp.Step, _ = rrdtool.Fetch(filename, param.ConsolFun, start_ts, end_ts, param.Step)
 		datas_size = len(datas)
-	}
-
-	nowTs := time.Now().Unix()
-	lastUpTs := nowTs - nowTs%int64(step)
-	rra1StartTs := lastUpTs - int64(rrdtool.RRA1PointCnt*step)
-
-	// consolidated, do not merge
-	if start_ts < rra1StartTs {
-		resp.Values = datas
-		goto _RETURN_OK
 	}
 
 	// no cached items, do not merge
@@ -158,49 +220,20 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 		goto _RETURN_OK
 	}
 
+	// 防止意外情况下，出现除0运算
+	if resp.Step == 0 {
+		resp.Step = step
+	}
+
 	// merge
 	{
 		// fmt cached items
-		var val cmodel.JsonFloat
 		cache := make([]*cmodel.RRDData, 0)
 
 		ts := items[0].Timestamp
-		itemEndTs := items[items_size-1].Timestamp
-		itemIdx := 0
-		if dsType == g.DERIVE || dsType == g.COUNTER {
-			for ts < itemEndTs {
-				if itemIdx < items_size-1 && ts == items[itemIdx].Timestamp &&
-					ts == items[itemIdx+1].Timestamp-int64(step) {
-					val = cmodel.JsonFloat(items[itemIdx+1].Value-items[itemIdx].Value) / cmodel.JsonFloat(step)
-					if val < 0 {
-						val = cmodel.JsonFloat(math.NaN())
-					}
-					itemIdx++
-				} else {
-					// missing
-					val = cmodel.JsonFloat(math.NaN())
-				}
 
-				if ts >= start_ts && ts <= end_ts {
-					cache = append(cache, &cmodel.RRDData{Timestamp: ts, Value: val})
-				}
-				ts = ts + int64(step)
-			}
-		} else if dsType == g.GAUGE {
-			for ts <= itemEndTs {
-				if itemIdx < items_size && ts == items[itemIdx].Timestamp {
-					val = cmodel.JsonFloat(items[itemIdx].Value)
-					itemIdx++
-				} else {
-					// missing
-					val = cmodel.JsonFloat(math.NaN())
-				}
-
-				if ts >= start_ts && ts <= end_ts {
-					cache = append(cache, &cmodel.RRDData{Timestamp: ts, Value: val})
-				}
-				ts = ts + int64(step)
-			}
+		if ts < end_ts {
+			cache = calc(items[0].Timestamp, items[items_size-1].Timestamp, dsType, step, items, param.ConsolFun, resp.Step)
 		}
 		cache_size := len(cache)
 
@@ -228,7 +261,7 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 			}
 
 			// fix missing
-			for ts := lastTs + int64(step); ts < cache[0].Timestamp; ts += int64(step) {
+			for ts := lastTs + int64(resp.Step); ts < cache[0].Timestamp; ts += int64(resp.Step) {
 				merged = append(merged, &cmodel.RRDData{Timestamp: ts, Value: cmodel.JsonFloat(math.NaN())})
 			}
 
@@ -248,10 +281,12 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 		mergedSize := len(merged)
 
 		// fmt result
-		ret_size := int((end_ts - start_ts) / int64(step))
+		ret_size := int((end_ts - start_ts) / int64(resp.Step))
 		ret := make([]*cmodel.RRDData, ret_size, ret_size)
 		mergedIdx := 0
-		ts = start_ts
+		if len(merged) > 0 {
+			ts = merged[0].Timestamp
+		}
 		for i := 0; i < ret_size; i++ {
 			if mergedIdx < mergedSize && ts == merged[mergedIdx].Timestamp {
 				ret[i] = merged[mergedIdx]
@@ -259,7 +294,7 @@ func (this *Graph) Query(param cmodel.GraphQueryParam, resp *cmodel.GraphQueryRe
 			} else {
 				ret[i] = &cmodel.RRDData{Timestamp: ts, Value: cmodel.JsonFloat(math.NaN())}
 			}
-			ts += int64(step)
+			ts += int64(resp.Step)
 		}
 		resp.Values = ret
 	}
@@ -269,6 +304,7 @@ _RETURN_OK:
 	proc.GraphQueryItemCnt.IncrBy(int64(len(resp.Values)))
 	return nil
 }
+
 
 func (this *Graph) Info(param cmodel.GraphInfoParam, resp *cmodel.GraphInfoResp) error {
 	// statistics

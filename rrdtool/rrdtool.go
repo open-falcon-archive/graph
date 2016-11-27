@@ -169,7 +169,7 @@ func FlushFile(filename string, items []*cmodel.GraphItem) error {
 	return <-done
 }
 
-func Fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RRDData, error) {
+func Fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RRDData, int, error) {
 	done := make(chan error, 1)
 	task := &io_task_t{
 		method: IO_TASK_M_FETCH,
@@ -184,17 +184,18 @@ func Fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RR
 	}
 	io_task_chan <- task
 	err := <-done
-	return task.args.(*fetch_t).data, err
+	return task.args.(*fetch_t).data, task.args.(*fetch_t).step, err
 }
 
-func fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RRDData, error) {
+func fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RRDData, int, error) {
 	start_t := time.Unix(start, 0)
 	end_t := time.Unix(end, 0)
 	step_t := time.Duration(step) * time.Second
 
 	fetchRes, err := rrdlite.Fetch(filename, cf, start_t, end_t, step_t)
 	if err != nil {
-		return []*cmodel.RRDData{}, err
+		log.Printf("[ERROR] fetch data failed, file_name = %s, err = %s", filename, err.Error())
+		return []*cmodel.RRDData{}, 0, err
 	}
 
 	defer fetchRes.FreeValues()
@@ -215,7 +216,7 @@ func fetch(filename string, cf string, start, end int64, step int) ([]*cmodel.RR
 		ret[i] = d
 	}
 
-	return ret, nil
+	return ret, int(step_s), nil
 }
 
 func FlushAll(force bool) {
