@@ -96,7 +96,7 @@ func ioWorker() {
 				}
 			} else if task.method == IO_TASK_M_FETCH {
 				if args, ok := task.args.(*fetch_t); ok {
-					args.data, err = fetch(args.filename, args.cf, args.start, args.end, args.step)
+					args.data, args.step, err = fetch(args.filename, args.cf, args.start, args.end, args.step)
 					task.done <- err
 				}
 			}
