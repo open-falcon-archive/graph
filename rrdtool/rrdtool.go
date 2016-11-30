@@ -108,7 +108,11 @@ func update(filename string, items []*cmodel.GraphItem) error {
 			continue
 		}
 		if item.DsType == "DERIVE" || item.DsType == "COUNTER" {
-			u.Cache(item.Timestamp, int(item.Value))
+			if item.Value > 0 {
+				u.Cache(item.Timestamp, uint64(item.Value))
+			} else {
+				u.Cache(item.Timestamp, int(item.Value))
+			}
 		} else {
 			u.Cache(item.Timestamp, item.Value)
 		}
