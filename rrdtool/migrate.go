@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"net/rpc"
-	"os"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -145,7 +145,7 @@ func net_task_worker(idx int, ch chan *Net_task_t, client **rpc.Client, addr str
 					}
 				} else {
 					if err = fetch_rrd(client, task.Key, addr); err != nil {
-						if os.IsNotExist(err) {
+						if strings.Contains(err.Error(), "no such file or directory") {
 							pfc.Meter("migrate.scprrd.null", 1)
 							//文件不存在时，直接将缓存数据刷入本地
 							atomic.AddUint64(&stat_cnt[FETCH_S_ISNOTEXIST], 1)
